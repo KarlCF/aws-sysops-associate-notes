@@ -53,3 +53,168 @@
   * The instance store-backed AMI that was used to launch the instance is missing a required part (image.part.xx file)
   * **To find the reason**: Check on the EC2 console, instances, Description tab, note the reason next to the State transition reason label
 
+### EC2 SSH - Troubleshooting
+
+* Make sure the private key (pem file) on your linux machine has 400 permissions, else you will get "Unprotected Private Key File"
+* Make sure the username for the OS is given correctly when logging via SSH, else you will get "Host key not found" error
+* **Possible reasons for 'connection timeout' to EC2 instances via SSH**:
+  * SG is not configured correctly
+  * CPU load of the instance is high
+
+### EC2 Instance Launch Types
+
+* **On Demand**: **Short workload**, predictable pricing
+* **Reserved (MINIMUM 1 year):**
+  * **Reserved Instances**: **long workloads**
+  * **Convert Reserved Instances**: long workloads with flexible instances
+  * **Scheduled Reserved Instances**: **recurring workloads** on specified time-range (e.g. every thuersday between 3 to 6 pm)
+* **Spot Instances**: short workload, for cheap, can lose instances (less reliable)
+* **Dedicated Instances**: no other customers will share your hardware
+* **Dedicated Hosts**: book an entire physical server, control instance placement 
+
+##### Good combination: Reserved Instances for baseline + On-Demand & Spot for peaks
+
+#### EC2 on Demand
+
+* Pay for what you use (billing per second, after the first minute)
+* Has the **highest cost** but no upfront payment
+* No long term commitment
+* Reccomended for short-term and un-interrupted workloads, where you can't predict the application's behavior
+
+#### Reserved
+
+* **Up to 72% discount** compared to On-demand
+* Pay upfront for what you use with long term commitment
+* Reservation period can be 1 or 3 years
+* Reserve a specific instance type
+* Recommended for steady state usage applications (think database)
+* **Convertible Reserved Instance**
+  * Can change the EC2 instance type
+  * Up to 54%
+* **Scheduled Reserved Instances**
+  * Launch within time window you reserve
+  * When you require a fraction of day / week / month
+
+#### EC2 Spot Instances
+
+* Can get a discount of up to 90% compared to On-demand
+* Instances that you can "lose" at any point of time if your max price is less than the current spot price
+* The MOST cost-efficient instances in AWS
+* **Useful for workloads that are resilient to failure**
+  * Batch jobs
+  * Data analytics
+  * Image processing
+  * ...
+* **Not good for critical jobs or databases**
+
+#### EC2 Dedicated Hosts
+
+* Physical dedicated EC2 server for use
+* Full contorl of EC2 instance placement
+* Visibility into the underlying sockets / physical cores of the hardware
+* Allocated for your account for a 3 year period reservation
+* More expensive
+* Useful for software that have complicated licensing model (BYOL - Bring Your Own License), and companies with strong regulatory or compliance needs
+
+#### EC2 Dedicated Instances 
+
+* Instances running on hardware that's dedicated to you
+* May share hardware with other instances in same account
+* No control over instance placement (can move hardware after Stop / Start)
+
+### EC2 Spot Instance & Spot Fleet
+
+#### EC2 Spot Instance Requests
+
+* Cang get a discount of up to 90% compared to On-Demand
+* Define **max spot price** and get the instance while current spot price < max
+  * The hourly spot price varies based on offer and capacity
+  * If the current spot price > your max price you can choose to stop or terminate your instance within a 2 minutes grace period
+* Other strategy: **Spot Block**
+  * "Block" spot instance during a specified time frame (1 a 6 hours) without interruptions
+  * In rare situations, the instance may be reclaimed
+* Used for batch jobs, data analysis, or workloads that are resilient to failures
+* Not great for critical jobs or databases
+
+#### How to terminate Spot Instances?
+
+* To properly terminate spot instances, you must first cancel a spot request, and then terminate the associated Spot Instances
+* You can only cancel Spot Instance requests that are **open, active or disabled**
+* Cancelling a Spot Request does not terminate instances
+
+#### Spot Fleets
+
+* Spot Fleets = set of Spot Instances + (optional) On-Demand Instances
+* The Spot Fleet will try to meet the target capacity with price constraints
+  * Define possible launch pools: instance type (e.g.: m5.large), OS, Availability Zone
+  * Can have multiple launch pools, so that the fleet can choose
+  * Spot Fleet stopts launching instances when reaching capacity or max cost
+* Strategies to allocate Spot Instances:
+  * **lowestPrice**: from the pool with the lowest price (cost optimization, short workload)
+  * **diversified**: distributed across all pools (great for availability, long workloads)
+  * **capacityOptimized**: pool with the optimal capacity for the number of instances
+* **Spot Fleets allows the user to automatically request Spot Instances with the lowest price**
+
+### EC2 Instance Types 
+
+* R: applications that needs a lot of RAM - in-memory caches
+* C: applications that need good CPU - compute / databases
+* M: applications that are balanced (medium) - general / web app
+* I: applications that need good local I/O (instance storage) - databases
+* G: applications that need a GPU - video rendering / machine learning
+
+#### Burstable Instances (T2 / T3)
+
+
+* T2 / T3: burstable instances (up to a capacity)
+* T2 / T3 - unlimited: unlimited burst
+
+* Burst means that overral, the instance has OK CPU performance, and when there is a need to process something unexpected (spike in load), it can burst and the CPU becomes very good. 
+* Machine bursts utilizes burst credits, and after the credits are gone, the CPU becomes weak
+* Credits start to accumulate after the instance stops bursting
+
+
+* Check: https://ec2instances.info/
+
+#### T2 / T3 Unlimited
+
+* Possible to have "unlimited burst credit balance"
+* After the credit balance is gone, you pay extra for the consumption
+* Use carefully, costs can go high
+
+### AMI 
+
+#### Why use a custom AMI?
+
+* Using a custom built AMI can provide the following advantages:
+  * Pre-installed packages needed
+  * Faster boot time (no need for ec2 user data at boot time)
+  * Machine comes configured with monitoring / enterprise software
+  * Security concerns - control over the machines in the network
+  * Control of maintenance and updates of AMIs over time
+  * Active Directory Integration out of the box
+  * Installing your app ahead of time (for faster deploys when auto-scaling)
+  * Using someone else's AMI that is optimised for running an app, DB, etc...
+* AMI's are built for a specific AWS region
+
+#### Using Public AMIs
+
+* You can leverage AMIs from other people
+* You can also pay for other people's AMI by the hour
+  * These people have optmised the software
+  * The Machine is easy to run and configure
+  * You basically rent "expertise" from the AMI creator
+* AMI can be found and published on the Amazon Marketplace
+* **Some AMIs might come with malware or may not be secure for your enterprise, be careful**
+
+#### AMI Storage
+
+* AMI takes space, and is stored in Amazon S3
+* Amazon S3 is a durable, cheap and resilient storage where most of your backups live (but you won't see them in the S3 console)
+* By default, AMis are private and locked for your account / region
+* It is possible to make AMIs public and share with other AWS accounts or sell them on the AMI Marketplace
+
+#### AMI Pricing
+
+* S3 storage pricing
+* Make sure to remove the AMIs you don't use
