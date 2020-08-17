@@ -218,3 +218,37 @@
 
 * S3 storage pricing
 * Make sure to remove the AMIs you don't use
+
+### Cross Account AMI Copy
+
+* You can sahre an AMI with another AWS account
+* Sharing an AMI does not affect the ownership of the AMI
+* If you copy an AMI that has been shared with your account, you are the owner of the target AMI in your account
+* To copy an AMI that was shared with you from another account, the owner of the resource AMI must grant you read permissions for the storage that backs the AMI, either the associated EBS snapshot (for an Amazon EBS-backed AMI) or an associated S3 bucket (for an instance store-backed AMI)
+* **Limits**:
+  * You can't copy an encrypted AMI that was shared with you from another account. Instead, if the underlying snapshop and encryption key was shared with you, you can copy the snapshot while re-encrypting it with a key of your own. You own the copied snapshot, and can register it as a new AMI.
+  * You can't copy an AMI with an associated **billingProduct** code that was shared with you from another account. This includes Windows AMIs and AMIs from the AWS Marketplace. To copy a shared AMI with a **billingProduct** code, launch an EC2 instance in your account using the shared AMMI and then create an AMI from the instance
+* https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html
+
+### Elastic IP
+
+* Use cases:
+  * Mask the failure of an instance or software by rapidly remapping the address
+* The soft limit is 5 Elastic IP per account (you have to request an increase if there's need for more)
+* Overall, try to avoid using Elastic IP, some alternatives are:
+  * Possible to use a random Public IP and register a DNS name
+  * Load Balancer with a static hostname
+
+### CloudWatch Metrics for EC2
+
+* **AWS Provided metrics (AWS pushes them)**:
+  * Basic Monitoring (default): metrics are collected at a 5 minute interval
+  * Detailed Monitoring (paid): metrics are collected at a 1 minute interval
+  * Includes CPU, Network, Disk and Status Check Metrics
+
+* **Custom metric (yours to push)**:
+  * Basic Resolution: 1 minute resolution
+  * High Resolution: all the way to 1 second resolution
+  * Include RAM, application level metrics
+  * Make sure the IAM permissions on the EC2 instance role are correct
+
