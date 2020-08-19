@@ -252,3 +252,26 @@
   * Include RAM, application level metrics
   * Make sure the IAM permissions on the EC2 instance role are correct
 
+#### EC2 included metrics
+
+* **CPU**: CPU Utilization + Credit Usage / Balance
+* **Network**: Network In / Out
+* **Status Check**:
+  * Instance status = check the EC2 VM
+  * System status = check the underlying hardware
+* **Disk**: Read Write for Ops / Bytes (only for instance store)
+
+#### EC2 Custom Metrics
+
+* Sample custom metrics for EC2:
+  * RAM usage
+  * Swap usage
+  * Any custom metric for your application (requests per seconds, etc)
+
+### CloudWatch Logs for EC2
+
+* By default, no logs from your EC2 machine will go to CloudWatch
+* You need to run a CloudWatch agent on EC2 to push the log files you want
+* Make sure IAM permissions are correct
+* The CloudWatch log agent can be setup on premise too
+* 
