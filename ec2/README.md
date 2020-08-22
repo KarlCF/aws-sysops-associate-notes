@@ -274,4 +274,3 @@
 * You need to run a CloudWatch agent on EC2 to push the log files you want
 * Make sure IAM permissions are correct
 * The CloudWatch log agent can be setup on premise too
-* 
