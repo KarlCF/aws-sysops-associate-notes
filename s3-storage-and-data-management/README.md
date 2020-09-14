@@ -176,3 +176,171 @@
 * The "country" is determined using a 3rd party Geo-IP database
 * Use case: Copyright Laws to control access to conents
 
+#### CloudFront Access Logs
+
+* CloudFront access logs: logs every request made to CloudFront into a logging S3 bucket
+
+#### CloudFront Reports
+
+* It's possible to generate reports on:
+  * Cache Statistics Report
+  * Popular Objects Report
+  * Top Referrers Report
+  * Usage Reports
+  * Viewers Report
+* These reports are based on the data from the Access Logs (Access Logs don't have to be enabled to have access to the reports)
+
+#### CloudFront Troubleshooting
+
+* CloudFront caches HTTP 4xx and 5xx status codes returned by S3 (or the origin server)
+* 4xx error code indicates that user doesn't have access to the underlying bucket (403) or the object the user is requesting is not found (404)
+* 5xx error codes indicates Gateway issues
+
+### S3 Inventory
+
+* Amazon S3 inventory helps manage your storage
+* Audit and report on the replication and encryption status of your objects
+* Use cases:
+  * Business
+  * Compliance
+  * Regulartory needs
+* You can query all the data using Amazon Athena, Redshift, Presto, Hive, Spark...
+* Can setup multiple inventories
+* Data goes from a source bucket to a target bucket (need to setup policy)
+
+## S3 Storage Classes
+
+### Amazon Glacier
+
+* Low Cost object storage meant for archiving / backup
+* Data is retained for the longer term (10s of years)
+* Alternative to on-premise magnetic tape storage
+* Average annual durability is 99.999999999%
+* Cost per storage per month ($0.004 / GB) + retrieval cost
+* Each item in Glacier is called "Archive" (up to 40TB)
+* Archives are stored in "Vaults"
+
+### Amazon Glacier Storage Tier
+
+#### Amazon Glacier
+
+* Retrieval options:
+  * Expedited (1 to 5 minutes)
+  * Standard (3 to 5 hours)
+  * Bulk (5 to 12 hours)
+  * Minimum storage duration of 90 days
+
+#### Amazon Glacier Deep Archive
+
+* For long term storage - cheaper
+* Retrieval options:
+  * Standard (12 hours)
+  * Bulk (48 hours)
+  * Minimum storage duration of 180 days
+
+### S3 Lifecycle Rules
+
+* **Transition actions**: it defines when objects are transitioned to another storage class
+  * Move objects to Standard IA class 60 days after creation
+  * Move to Glacier for archiving after 6 months
+* **Expiration actions**: configure objects to expire (delete) after some time
+  * Access log files can b eset to delete after 365 days
+  * **Can be used to delete old versions of files (if versioning is enabled)**
+  * Can be used to delete incomplete multi-part uploads
+* Rules can be created for a certain prefix (e.g.: s3://mybucket/temp/*)
+* Rules can be created for certain object tags (e.g.: Department: Finance)
+
+### S3 Performance
+
+* Amazon S3 automatically scales to high request rates, latency 100-200 ms
+* Your application can achieve at least 3500 PUT/COPY/POST/DELETE and 5500 GET/HEAD requests per second per prefix in a bucket
+* There are no limits to the number of prefixes in a bucket
+  * Example (object path => prefix):
+    * bucket/folder1/sub1/file => /folder1/sub1/
+    * bucket/1/file => /1/
+
+#### S3 - KMS Limitation
+
+* If you use SSE-KMS you may be impacted by the KMS limits
+* When you upload, it calls the **GenerateDataKey** KMS API
+* When you donwnload, it calls the **Decrypt** KMS API
+* Count towards the KMS quota per second (5500 / 10000 / 30000 requests/second based on region)
+
+#### Multi-Part upload
+
+* Recommended for files > 100 MB, **must use for files > 5G B**
+* Can help parallelize uploads (speed up transfers)
+
+#### S3 Transfer Acceleration (upload only)
+
+* Increase transfer speed by transferring file to an AWS edge location which will forward the data to the S3 bucket in the target region
+* Compatible with multi-part upload
+
+#### S3 Byte-Range Fetches
+
+* Parallelize GETsx by request specific byte ranges
+* Better resilience in case of failures
+* Can be used to retrieve only partial data (for example the head of a file)
+
+### S3 Select & Glacier Select
+
+* Retrieve less data using SQL by performing **server side filtering**
+* Can filter by rows & columns (simple SQL statements)
+* Less network transfer, less CPU cost client-side
+
+### S3 Event Notifications
+
+* S3:ObjectCreated, S3:ObjectRemoved, S3:ObjectRestore, S3:replication, etc...
+* Object name filtering possible (e.g.: *.jpg)
+* Targets:
+  * SNS
+  * SQS
+  * Lambda
+* Can create as many "S3 events" as desired
+* S3 event notifications typically deliver events in seconds, but can take a minute or longer
+* If two writes are made to a single non-versioned object at the same time, it is possible that only a single event notification will be sent
+* If you want to ensure that event notification is sent for every sucessful write, you need to enable versioning
+
+### S3 Analytics - Storage Class Analysis
+
+* You can setup analytics to help determine when to transition objects from one storage type to another
+  * Does not work for ONEZONE_IA or Glacier
+* Report is updated on a daily basis
+* Takes about 24h to 48h from begining to first start
+* This helps to configure Lifecycle Rules
+
+### Glacier
+
+* Low cost object storage meant for archiving / backup
+* Data is retained for the longer term (10s of years)
+* Alternative to on-premise magnetic tape storage
+* Average annual durability is 99.999999999%
+* Cost per storage per month ( $0.0004 / GB) + retrieval cost
+* Each item in Glacier is called "Archive" (up to 40TB)
+* Archives are stored in "Vaults"
+
+#### Glacier Operations
+
+* 3 Glacier operations:
+  * Upload - Single operation or by parts (MultiPart upload) for larger archives
+  * Download - First initiate a retrieval job for the particular archive, Glacier then prepares it for download. User then has a limited time to download the data from staging server
+  * Delete - Use Glacier Rest API or AWS SDKs by specifying archive ID
+* Restore links have an expiry date
+* 3 retrieval options:
+  * Expedited (1 to 5 minutes retrieval) - $0.03 per GB and $0.01 per request
+  * Standard (3 to 5 hours) - $0,01 per GB and 0.05 per 1000 requests
+  * Bulk (5 to 12 hours) - $0,0025 per GB and $0,025 per 1000 requests
+
+#### Glacier - Vault Policies & Vault Lock
+
+* Vault is a collection of archives
+* Each Vault has:
+  * One vault access policy
+  * One vault lock policy
+* Vault Policies are written in JSON
+* Vault Access Policy is similar to bucket policy (restrict user / account permissions)
+* Vault Lock Policy is a poolicy you **lock**, for regulatory and compliance requirements
+  * The policy is **immutable, it can never be changed**(that's why it's called a lock)
+  * Ex1: Forbid deleting an archive if less than 1 year old
+  * Ex2: Implement WORM policy (write once read many)
+
