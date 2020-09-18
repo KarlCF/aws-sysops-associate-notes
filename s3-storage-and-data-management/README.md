@@ -344,3 +344,95 @@
   * Ex1: Forbid deleting an archive if less than 1 year old
   * Ex2: Implement WORM policy (write once read many)
 
+### Snowball
+
+* Physical data transport solution that helps moving TBs or PBs of data in or out of AWS
+* Alternative to moving data over the network (and paying network fees)
+* Secure, tamper resistant, uses KMS 256 bit encryption
+* Tracking using SNS and text messages. E-link shipping label
+* Pay per data transfer job
+* Use cases: large data cloud migrations, DC decomission, disaster recovery
+* If it takes more than a week to transfer over the network, use Snowball devices
+
+#### Snowball into Glacier
+
+* Snowball cannot import to Glacier directly, you have to use S3 first, and then setup a lifecycle policy
+
+#### Snowball Process
+
+1. Request snowball devices from the AWS console
+2. Install the snowball client on your servers
+3. Connect the snowball to your servers and copy files using the client
+4. Ship back the device when you're done (goes to the right AWS facility)
+5. Data will be loaded into S3 bucket
+6. Snowball is completely wiped
+7. Tracking is done using SNS, text messages and the console
+
+### Snowball Edge
+
+* Snowball Edge add computational capability to the device
+* 100 TB capacity with either:
+  * Storage optimized - 24 vCPU
+  * Compute optimized - 54 vCPU & optional GPU
+* Supports a custom EC2 AMI so you can perform processing on the go
+* Supports custom Lambda functions
+* Useful for pre-processing data while moving
+* Use case: data migration, image collation, IoT capture, machine learning
+
+### Snowmobile
+
+* Transfer exabytes of data (1 EB = 1000 PB = 1000000 TBs)
+* Each Snowmobile has 100 PB of capacity (use multiple inparallel)
+* Better than Snowball if you transfer more than 10 PB
+
+### Hybrid Cloud for Storage
+
+* AWS is pushing for "hybrid cloud"
+  * Part of your infrastructure is on the cloud
+  * Part of your infrastructure is on-premise
+* This can be due to
+  * Long cloud migrations
+  * Security requirements
+  * Compliance requirements
+  * IT strategy
+* S3 is a proprietary storage technology (unlike EFS / NFS), to expose the S3 data on-premise, we need AWS Storage Gateway
+
+### AWS Storage Gateway
+
+* Bridge between on-premise data and cloud data in S3
+* Use cases: disaster recovery, backup & restore, tiered storage
+* 3 types of Storage Gateway
+
+#### Storage Gateway File Gateway
+
+* Configured S3 buckets are accessible using **NFS and SMB protocol**
+* Supports S3 standard, S3 IA, S3 One Zone IA
+* Bucket access using IAM roles for each File Gateway
+* Most recently used data is cached in the file gateway
+* Can be mounted on many servers
+
+#### Storage Gateway Volume Gateway
+
+* Block storage using **iSCSI protocol** backed by S3
+* Backed by EBS snapshots which can help restore on-premise volumes
+* **Cached volumes**: low latency access to most recent data
+* **Stored volumes**: entire dataset is on premise, scheduled backups to S3
+
+#### Storage Gateway Tape Gateway
+
+* Some companies have backup processes using physical tapes
+* With Tape Gateway, companies use the same  processes but in the cloud
+* Virtual Tape Library (VTL) backed by Amazon S3 and Glacier
+* Back up data using existing tape-based processes (and iSCSI interface)
+* Works with leading backup software vendors
+
+### AWS Athena
+
+* **Serverless** service to perform analytics **directly against S3 files**
+* Uses SQL language to query the files
+* Has a JDBC / ODBC driver
+* Charged per query and amount of data scanned
+* Supports CSV, JSON, ORC, Avro, and Parquet (built on Presto)
+* Use cases: 
+  * Business intelligence, Analytics, Reporting, Analyze & Query VPC Flow Logs, ELB Logs, CloudTrail trails, etc...
+
